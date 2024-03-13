@@ -1,4 +1,5 @@
 import streamlit as st
+import altair as alt
 import backend as bk
 import pandas as pd
 import os

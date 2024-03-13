@@ -8,8 +8,10 @@ import json
 import os
 import plotly.graph_objects as go
 import plotly.express as px
+import altair as alt
 from decimal import Decimal, ROUND_HALF_UP
 import datetime
+import charts
 
 import streamlit as st
 
@@ -352,6 +354,7 @@ def plotly_pie(data: pd.Series, title: str = "Pie chart"):
 
 if __name__ == "__main__":
     hybrid_df = get_hybrid_flows_table()
+    hybrid_df.index.rename('Date', inplace=True)
 
     first_four = hybrid_df.iloc[:, :4]
     sum_others = hybrid_df.iloc[:, 4:].sum(axis=1)
@@ -360,6 +363,8 @@ if __name__ == "__main__":
     short_df2 = pd.concat([short_df, net_flow], axis=1)
     custom_index = short_df.index.strftime('%Y-%m-%d')
 
+    fig = charts.altair_line(hybrid_df, right_columns = ['GBTC'])
+    fig.show()
     #hydrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
     # hydrid_df.plot(kind='bar', stacked=False, figsize=(10,7))
     # plt.title('Bar Chart of Data')
