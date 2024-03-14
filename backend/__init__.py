@@ -1,1 +1,1 @@
-from . import btc_etfs
+from . import btc_etfs, charts

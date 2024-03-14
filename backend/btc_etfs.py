@@ -3,17 +3,9 @@ import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 import re
-import matplotlib.pyplot as plt
 import json
 import os
-import plotly.graph_objects as go
-import plotly.express as px
-import altair as alt
-from decimal import Decimal, ROUND_HALF_UP
-import datetime
-import charts
-
-import streamlit as st
+from . import charts
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
@@ -194,6 +186,7 @@ class btc_etf_data(object):
 
 def get_hybrid_flows_table():
     dataset_block = btc_etf_data().df
+    last_block_day = dataset_block.index[-1]
     fs_data = btc_etf_data()
     farside = fs_data.get_farside_table()*1000000
   
@@ -206,156 +199,14 @@ def get_hybrid_flows_table():
     hybrid_df = hybrid_df.astype("float")
     hybrid_df = hybrid_df.loc[(hybrid_df!=0).any(axis=1)]
     
-    return hybrid_df
-
-#################### Plotting functions ####################
-def plotly_bar(data: pd.DataFrame):
-    fig = go.Figure()
-
-        # Add a bar trace for each column (except for 'Category' column)
-    for col in data.columns:
-        fig.add_trace(go.Bar(x=data.index, y=data[col], name=col))
-
-    # Customize layout
-    fig.update_layout(
-        title='Bar chart',
-        xaxis_title='Category',
-        yaxis_title='Value',
-        barmode='group'  # 'group' for grouped bar chart, 'stack' for stacked bar chart
-    )
-
-    fig.show()
-
-def px_bar(data:pd.DataFrame):
-    fig = px.bar(data, x=data.index, y=data.columns, title = "BTC ETF Flows")
-    # Set the number of x ticks
-    fig.update_xaxes(nticks=10, showgrid=True)
-    fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
-    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
-    fig.show()
-
-def mpl_bar(data: pd.DataFrame):
-    num_vars = len(data.columns) - 1
-    bar_width = 0.15
-    index = np.arange(len(data.index))
-
-    fig, ax = plt.subplots()
-
-    for i, col in enumerate(data.columns[1:]):
-        ax.bar(index + i * bar_width, data[col], bar_width, label=col)
-
-    ax.set_xlabel('Category')
-    ax.set_ylabel('Value')
-    ax.set_title('Bar chart')
-    ax.set_xticks(index + bar_width / 2)
-    ax.set_xticklabels(data.index)
-    ax.legend()
-
-    return fig  
-
-def calculate_dtick(data: pd.DataFrame, num_ticks: int, round: bool = False):
-    data_range = data.values.max() - data.values.min()
-    dtick = data_range / num_ticks
-    if round:
-        # Define the "appropriate" numbers
-        appropriate_numbers = generate_appropriate_numbers(abs(data.values).max())
-        # Find the closest "appropriate" number to dtick
-        dtick = min(appropriate_numbers, key=lambda x:abs(x-dtick))
-    return dtick   
-
-def generate_appropriate_numbers(max_value):
-    factors = [2, 2.5, 2]
-    appropriate_numbers = [0.1]
-    while appropriate_numbers[-1] < max_value:
-        next_number = appropriate_numbers[-1] * factors[len(appropriate_numbers) % len(factors)]
-        appropriate_numbers.append(next_number)
-    return appropriate_numbers 
-
-def plotly_bar_fullpage(data: pd.DataFrame, custom_index = None):
-    fig = go.Figure()
-    if custom_index is not None:
-        for col in data.columns:
-            fig.add_trace(go.Bar(name=col, x=custom_index, y=data[col])) 
-    else:        
-        for col in data.columns:
-            fig.add_trace(go.Bar(name=col, x=data.index, y=data[col]))  # Increase width of the bars
-
-    # Change the bar mode
-    fig.update_layout(barmode='group')  
-
-    dtick = calculate_dtick(data, 15, round = True); print(dtick)
-    fig.update_layout(yaxis=dict(showgrid=True, gridwidth=1, gridcolor='Black', tickfont=dict(size=15), dtick = dtick, tick0=0, ticklen=10, 
-                               tickwidth=2, showline=True, linewidth=2, linecolor='black', mirror=True)) 
-    fig.update_layout(legend=dict(x=1.01, y=1, traceorder="normal", font=dict(family="Times New Roman, Times, Serif", size=14, color="black"), 
-                              bgcolor="LightSteelBlue", bordercolor="Black", borderwidth=2),
-                  legend_title=dict(text="<b>U.S Spot BTC ETF's<b>", font=dict(size=18, color="black"))) 
-    fig.update_layout(title=dict(text="<b>Bitcoin ETF flows<b>", x=0.5, font=dict(size=32, color="black")), 
-                      xaxis_title="Date",yaxis_title="<b>USD flow into out/of ETF that day<b>", legend_title="<b>U.S Spot BTC ETF's<b>",
-                      font=dict(family="Times New Roman, Times, Serif", size=20, color="black"))
-
-    fig.update_layout(showlegend=True, xaxis_showgrid=True, yaxis_showgrid=True, 
-                xaxis=dict(showline=True, linewidth=2, linecolor='black', mirror=True, type="category"),
-            yaxis=dict(showline=True, linewidth=2, linecolor='black', mirror=True))
-
-    fig.update_layout(xaxis=dict(rangeslider=dict(visible=True), type="category", showgrid=True, gridwidth=1, gridcolor='Black'))# Add x-grid
-    fig.update_layout(shapes=[dict(type="rect",xref="paper",yref="paper",x0=-0.005,y0=-0.27,x1=1.005,y1=-0.07,line=dict(color="Black",width=2),)])
-
-    return fig 
-
-def plotly_bar_sl(data: pd.DataFrame, custom_index=None, width = None, height = None):
-    fig = go.Figure()
-
-    if custom_index is not None:
-        for col in data.columns:
-            fig.add_trace(go.Bar(name=col, x=custom_index, y=data[col]))
-    else:
-        for col in data.columns:
-            fig.add_trace(go.Bar(name=col, x=data.index, y=data[col]))  # Increase width of the bars
-
-    # Change the bar mode
-    fig.update_layout(barmode='group')
-
-    dtick = calculate_dtick(data, 8, round=True)
-
-    fig.update_layout(
-        yaxis=dict(showgrid=True, tickfont=dict(size=15), dtick=dtick, tick0=0, ticklen=10,
-                   tickwidth=2, showline=True, linewidth=1, linecolor='white'),
-        yaxis_title="<b>USD flow into out/of ETF that day<b>",
-        font=dict(family="Times New Roman, Times, Serif", color="black"),
-        showlegend=True,
-        xaxis_showgrid=True,
-        yaxis_showgrid=True,
-        xaxis=dict(type="category")
-    )
-
-    fig.update_xaxes(tickfont=dict(color='white'))
-    fig.update_yaxes(tickfont=dict(color='white'))
-
-    if width is not None and height is not None:
-        # Specify width and height of the figure
-        fig.update_layout(width=width, height=height)
-
-    # Add a range slider below the plot increasing height
-    fig.update_layout(
-        xaxis=dict(rangeslider=dict(visible=True),
-                   showgrid=True,
-                   showline=True,
-                   linewidth=1,
-                   linecolor='white')
-    )
-    # Put legend at the bottom between date slider and date ticks
-    fig.update_layout(legend=dict(orientation='h', yanchor='bottom', y=1.04, xanchor='left', x=0.01))
-
-    return fig
-
-def plotly_pie(data: pd.Series, title: str = "Pie chart"):
-    fig = px.pie(data, values=data.values, names=data.index, title=title)
-    return fig
+    return hybrid_df, last_block_day
 
 if __name__ == "__main__":
-    hybrid_df = get_hybrid_flows_table()
-    hybrid_df.index.rename('Date', inplace=True)
+    # hybrid_df = get_hybrid_flows_table()
+    # hybrid_df.index.rename('Date', inplace=True)
 
+    # hybrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
+    hybrid_df = pd.read_excel(wd+fdel+"Hybrid_flowz_table.xlsx", index_col = 0)
     first_four = hybrid_df.iloc[:, :4]
     sum_others = hybrid_df.iloc[:, 4:].sum(axis=1)
     short_df = first_four.assign(SumOthers=sum_others).rename(columns={'SumOthers': 'Others'})
@@ -364,7 +215,7 @@ if __name__ == "__main__":
     custom_index = short_df.index.strftime('%Y-%m-%d')
 
     fig = charts.altair_line(hybrid_df, right_columns = ['GBTC'])
-    fig.show()
+ 
     #hydrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
     # hydrid_df.plot(kind='bar', stacked=False, figsize=(10,7))
     # plt.title('Bar Chart of Data')
