@@ -12,11 +12,10 @@ fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
 
-logo = plt.imread(parent+fdel+"Macro_Bootlegger.jpg")
-
 #Get data on daily flows ######
 hybrid_df, last_block_day = backend.btc_etfs.get_hybrid_flows_table()
 hybrid_df.index.rename('Date', inplace=True)
+hybrid_df /= 1000000  # Convert to millions of USD
 
 first_four = hybrid_df.iloc[:, :4]
 sum_others = hybrid_df.iloc[:, 4:].sum(axis=1)
@@ -37,40 +36,32 @@ alt_chart = alt.Chart(short_df).mark_bar().encode(
     column='Category:N'
 )
 
-
 ################ Streamlit commands below ############################
 st.set_page_config(layout="wide", page_icon=":cat:")
 
-col1, space, col2  = st.columns([1, 0.05, 1])  # Adjust the middle value to increase or decrease the space
-col1.title("Bitcoin: U.S Spot ETF Tracker")
-col1.subheader("By the Macro Bootlegger.")
-col1.caption("Data sources: The Block, Farside Investors.")
-col2.image(logo, use_column_width=False, width = 150)
-col2.caption("Follow me on: Twitter/𝕏: @Tech_Pleb, Github: @HelloThereMatey")
-col2.caption("Reccomended: Minimize the page choice bar at left to best view charts.")
-col2.divider()
+#st, space, st  = st.columns([1, 0.05, 1])  # Adjust the middle value to increase or decrease the space
+st.title("Daily USD flows into and out of U.S Bitcoin spot ETFs.")
+st.caption("Data sources: The Block, Farside Investors.")
+st.caption("Data yet to be finalized for dates after: "+last_block_day.strftime('%Y-%m-%d')+". \
+                Data for days after this date may be subject to revision. This applies to all charts here.")
+st.caption("Recommended: Minimize the page choice bar at left to best view charts with full screen.")
+st.divider()
 
-fig = backend.charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 600)
+fig = backend.charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="Net flow for Spot ETF on date (USD millions)")
 
 # Display the figure in the Streamlit app
-col1.subheader("Daily USD flows into and out of U.S Bitcoin spot ETFs.")
-col1.caption("Plotly grouped bar chart. Slide bar at bottom to change date range.")
-col1.plotly_chart(fig, use_container_width=True)
-col1.divider()
-col1.caption("Altair stacked bar chart showing the same flow data.")
-col1.bar_chart(short_df2, use_container_width=True)
-col1.divider()
+st.caption("Plotly grouped bar chart. Slide bar at bottom to change date range.")
+st.plotly_chart(fig, use_container_width=True)
+st.divider()
+st.caption("Altair stacked bar chart showing the same flow data.")
+st.bar_chart(short_df2, use_container_width=True)
+st.divider()
 
-col2.subheader("Daily net flow (USD)")
-col2.caption("Data yet to be finalized for dates after: "+last_block_day.strftime('%Y-%m-%d')+". \
-                Data for days after this date may be subject to revision. This applies to all charts here.")
-col2.bar_chart(net_flow,use_container_width=True)
-col2.divider()
-col2.subheader("Cumulative flows since inception (USD)")
-col2.bar_chart(cum_flows, use_container_width=True)
-col2.divider()
-col2.subheader("Daily fund flows data table (USD)")
-col2.dataframe(hybrid_flow_table_deet, use_container_width=True)
-col2.divider()
+st.subheader("Daily net flow (USD)")
+st.bar_chart(net_flow,use_container_width=True)
+st.divider()
+st.subheader("Cumulative flows since inception (USD)")
+st.bar_chart(cum_flows, use_container_width=True)
+st.divider()
 
 

@@ -202,10 +202,12 @@ def get_hybrid_flows_table():
     return hybrid_df, last_block_day
 
 if __name__ == "__main__":
-    # hybrid_df = get_hybrid_flows_table()
-    # hybrid_df.index.rename('Date', inplace=True)
+    hybrid_df, cunt = get_hybrid_flows_table()
+    hybrid_df.index.rename('Date', inplace=True)
 
-    # hybrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
+    #hybrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
+    print(hybrid_df)
+    quit()
     hybrid_df = pd.read_excel(wd+fdel+"Hybrid_flowz_table.xlsx", index_col = 0)
     first_four = hybrid_df.iloc[:, :4]
     sum_others = hybrid_df.iloc[:, 4:].sum(axis=1)

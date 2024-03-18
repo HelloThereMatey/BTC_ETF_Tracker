@@ -4,6 +4,11 @@ import plotly.graph_objects as go
 import plotly.express as px
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+fdel = os.path.sep
+wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
+parent = os.path.dirname(wd)
 
 def altair_line(df: pd.DataFrame, right_columns: list, axis_title: str = "USD"):
     #Melting the DataFrame to long format for easier plotting with Altair
@@ -32,14 +37,12 @@ def altair_line(df: pd.DataFrame, right_columns: list, axis_title: str = "USD"):
 
     # Combining the charts
     combined_chart = alt.layer(left_chart, right_chart).resolve_scale(y='independent')
-    combined_chart = combined_chart.configure_legend(
-    legendX=0.05, legendY=-0.06,
-    direction='horizontal',  # Attempt to set legend items horizontally
-    titleLimit=0  # Adjusts the maximum width of the legend title, can be tweaked
-    )
+    # combined_chart = combined_chart.configure_legend(orient = 'none',
+    # legendX=0.02, legendY=1.1, direction='horizontal',  # Attempt to set legend items horizontally
+    # )
     return combined_chart
 
-def plotly_bar_sl(data: pd.DataFrame, custom_index=None, width = None, height = None):
+def plotly_bar_sl(data: pd.DataFrame, custom_index=None, width = None, height = None, ytitle: str = "USD"):
     fig = go.Figure()
 
     if custom_index is not None:
@@ -51,13 +54,16 @@ def plotly_bar_sl(data: pd.DataFrame, custom_index=None, width = None, height = 
 
     # Change the bar mode
     fig.update_layout(barmode='group')
+    # Cast the spell to set the dark theme
+    fig.update_layout(template="plotly_dark")
 
-    dtick = calculate_dtick(data, 8, round=True)
-
+    datarange = data.values.max() - data.values.min()
+    numticks = 8
+    
     fig.update_layout(
-        yaxis=dict(showgrid=True, tickfont=dict(size=15), dtick=dtick, tick0=0, ticklen=10,
+        yaxis=dict(showgrid=True, tickfont=dict(size=15), dtick=datarange/numticks, tick0=0, ticklen=10,
                    tickwidth=2, showline=True, linewidth=1, linecolor='white'),
-        yaxis_title="<b>USD flow into out/of ETF that day<b>",
+        yaxis_title="<b>"+ytitle+"<b>",
         #font=dict(family="Times New Roman, Times, Serif", color="black"),
         showlegend=True,
         xaxis_showgrid=True,
@@ -65,8 +71,8 @@ def plotly_bar_sl(data: pd.DataFrame, custom_index=None, width = None, height = 
         xaxis=dict(type="category")
     )
 
-    fig.update_xaxes(tickfont=dict(color='white'))
-    fig.update_yaxes(tickfont=dict(color='white'))
+    # Update the X-axis to display dates in 'YYYY-MM-DD' format
+    fig.update_xaxes(tickformat="%Y-%m-%d")
 
     if width is not None and height is not None:
         # Specify width and height of the figure
@@ -182,3 +188,12 @@ def plotly_bar_fullpage(data: pd.DataFrame, custom_index = None):
 def plotly_pie(data: pd.Series, title: str = "Pie chart"):
     fig = px.pie(data, values=data.values, names=data.index, title=title)
     return fig
+
+
+if __name__ == "__main__":
+    
+    data = pd.read_excel(wd+fdel+"Hybrid_flowz_table.xlsx", index_col=0)
+    index = data.index.strftime('%Y-%m-%d')
+    print(type(data.index))
+    fig = plotly_bar_sl(data, custom_index=index, width = 1000, height = 700)
+    fig.show()
