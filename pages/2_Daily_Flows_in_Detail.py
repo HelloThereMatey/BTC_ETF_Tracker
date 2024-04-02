@@ -22,8 +22,11 @@ fig = backend.charts.plotly_bar_sl(hybrid_df, custom_index = index, width = 1200
 
 ################ Streamlit commands below ############################
 st.set_page_config(layout="wide", page_icon=":bird:")
+st.subheader("Daily fund flows for all Spot BTC ETFs (USD)")
 st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Daily fund flows data table (USD)")
+st.caption("Data yet to be finalized for dates after: "+last_block_day.strftime('%Y-%m-%d')+". \
+                Data for days after this date may be subject to revision.")
 st.dataframe(hybrid_flow_table_deet, use_container_width=True)
 st.divider()

@@ -47,10 +47,10 @@ st.caption("Data yet to be finalized for dates after: "+last_block_day.strftime(
 st.caption("Recommended: Minimize the page choice bar at left to best view charts with full screen.")
 st.divider()
 
-fig = backend.charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="Net flow for Spot ETF on date (USD millions)")
+fig = backend.charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="ETF net flow (USD millions)")
 
 # Display the figure in the Streamlit app
-st.caption("Plotly grouped bar chart. Slide bar at bottom to change date range.")
+st.caption("Plotly grouped bar chart. Slide bar at bottom to change date range. Bar show the net flow (flows in - flows out) for specific ETF on that date.")
 st.plotly_chart(fig, use_container_width=True)
 st.divider()
 st.caption("Altair stacked bar chart showing the same flow data.")
@@ -59,9 +59,17 @@ st.divider()
 
 st.subheader("Daily net flow (USD)")
 st.bar_chart(net_flow,use_container_width=True)
+st.caption("This is the sum of all ETF flows for each day. Positive values indicate more money flowed in than out.")
 st.divider()
+cum_flows = short_df.cumsum()
+print(short_df, cum_flows)
+fig2 = backend.charts.plotly_bar_sl(cum_flows, custom_index, width = 800, height = 650, ytitle="Cumulative flows (USD millions)")
 st.subheader("Cumulative flows since inception (USD)")
-st.bar_chart(cum_flows, use_container_width=True)
+st.plotly_chart(fig2, use_container_width=True)
+st.caption("This chart shows the cumulative net flow for that ETF since the inception. Does not consider the AUM & price changes in the underlying asset.")
 st.divider()
-
+st.subheader("Net cumulative flows since inception (USD)")
+st.bar_chart(net_flow.cumsum(),use_container_width=True)
+st.caption("This chart shows the cumulative net flow for all ETFs since the inception.")
+st.divider()
 

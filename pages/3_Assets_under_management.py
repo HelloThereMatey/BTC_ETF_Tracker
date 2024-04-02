@@ -19,15 +19,23 @@ latest_aum = aum.df
 last_update = aum.last_update.strftime('%Y-%m-%d') 
 pie_fig = bk.charts.plotly_pie(latest_aum, title = "Latest AUM Distribution (%), Updated: "+last_update)
 
-col1, col2  = st.columns(2)
-col1.title("Bitcoin: U.S Spot ETF's, Assets under management - AUM (USD)")
+btcholdings = bk.btc_etfs.btc_etf_data(metric="btc_holdings").df
 
-col1.divider()
-col1.subheader("ETF AUM Historical data(USD), last update: "+last_update)
-col1.line_chart(aum_dollars, use_container_width=True)
-col1.divider()
-col1.altair_chart(backend.charts.altair_line(aum_dollars, right_columns = ['GBTC'], axis_title = "Billions of U.S $").interactive(), use_container_width=True)
+# st, st  = st.columns(2)
+st.title("Bitcoin: U.S Spot ETF's, Assets under management - AUM (USD)")
+st.divider()
 
-col2.divider()
-col2.subheader("Latest AUM distribution.")
-col2.plotly_chart(pie_fig, use_container_width=True)
+st.subheader("ETF AUM Historical data(USD), last update: "+last_update)
+st.altair_chart(backend.charts.altair_line(aum_dollars, right_columns = ['GBTC'], axis_title = "Billions of U.S $").interactive(), use_container_width=True)
+st.caption("GBTC plotted vs right axis. All other funds plotted vs left axis.")
+
+st.divider()
+st.subheader("Latest AUM distribution.")
+st.caption("Pie chart below shows the current distribution of AUM in USD across the Spot ETFs.")
+st.plotly_chart(pie_fig, use_container_width=True)
+
+st.divider()
+st.subheader("BTC holdings of the Spot ETF funds.")
+st.caption("This shows the BTC holdings of the ETF funds. GBTC plotted vs right axis. All other funds plotted vs left axis.")
+st.altair_chart(backend.charts.altair_line(btcholdings, right_columns = ['GBTC'], axis_title = "BTC").interactive(), use_container_width=True)
+st.divider()

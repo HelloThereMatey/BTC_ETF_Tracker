@@ -98,7 +98,8 @@ class btc_etf_data(object):
         self.etf_urls = {"theblock": {"etf_flows": block_base_url+"spot-bitcoin-etf-flows",
                 "etf_aum_daily": block_base_url+"spot-bitcoin-etf-assets-daily",
                 "btc_etf_aum": block_base_url+"spot-bitcoin-etf-assets",
-                "exGBTC_etf_aum_hist": block_base_url+"spot-bitcoin-etf-aum-ex-gbtc-daily"},
+                "exGBTC_etf_aum_hist": block_base_url+"spot-bitcoin-etf-aum-ex-gbtc-daily",
+                "btc_holdings": block_base_url+"spot-bitcoin-etf-onchain-holdings"},
                 "farside": {"etf_flows": "https://farside.co.uk/?p=997"}}
         
         self.source = source; self.metric = metric
