@@ -1,0 +1,11 @@
+streamlit
+pandas
+numpy
+requests
+matplotlib
+altair
+plotly
+beautifulsoup4
+json
+os
+sys

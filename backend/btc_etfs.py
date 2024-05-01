@@ -2,14 +2,21 @@ import requests
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
-import re
 import json
 import os
-from . import charts
+import sys
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
+
+fdel = os.path.sep
+wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
+parent = os.path.dirname(wd)
+sys.path.append(wd+fdel+"backend")
+from backend import charts
+
+###############N FUNCTIONS BELOW ############
 
 def new_request(url: str) -> dict:
     r = requests.get(url)

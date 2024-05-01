@@ -3,17 +3,18 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
 import streamlit as st
 import altair as alt
-
-import backend  #This is my backend file that houses the functions and classes for getting the data and plotting templates etc. 
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
+sys.path.append(wd+fdel+"backend")
+from backend import btc_etfs, charts
 
 #Get data on daily flows ######
-hybrid_df, last_block_day = backend.btc_etfs.get_hybrid_flows_table()
+hybrid_df, last_block_day = btc_etfs.get_hybrid_flows_table()
 hybrid_df.index.rename('Date', inplace=True)
 hybrid_df /= 1000000  # Convert to millions of USD
 
@@ -47,7 +48,7 @@ st.caption("Data yet to be finalized for dates after: "+last_block_day.strftime(
 st.caption("Recommended: Minimize the page choice bar at left to best view charts with full screen.")
 st.divider()
 
-fig = backend.charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="ETF net flow (USD millions)")
+fig = charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="ETF net flow (USD millions)")
 
 # Display the figure in the Streamlit app
 st.caption("Plotly grouped bar chart. Slide bar at bottom to change date range. Bar show the net flow (flows in - flows out) for specific ETF on that date.")
@@ -63,7 +64,7 @@ st.caption("This is the sum of all ETF flows for each day. Positive values indic
 st.divider()
 cum_flows = short_df.cumsum()
 print(short_df, cum_flows)
-fig2 = backend.charts.plotly_bar_sl(cum_flows, custom_index, width = 800, height = 650, ytitle="Cumulative flows (USD millions)")
+fig2 = charts.plotly_bar_sl(cum_flows, custom_index, width = 800, height = 650, ytitle="Cumulative flows (USD millions)")
 st.subheader("Cumulative flows since inception (USD)")
 st.plotly_chart(fig2, use_container_width=True)
 st.caption("This chart shows the cumulative net flow for that ETF since the inception. Does not consider the AUM & price changes in the underlying asset.")

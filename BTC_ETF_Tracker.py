@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
-import backend
 import os
+import sys
 import matplotlib.pyplot as plt
 
 fdel = os.path.sep
@@ -27,6 +27,3 @@ st.caption("Follow me on: Twitter/𝕏: @Tech_Pleb")
 st.caption("Github: @HelloThereMatey")
 st.caption("Chuck me some sats if you would kind ser: sixhallway54@walletofsatoshi.com")
 st.divider()
-
-import plotly.graph_objects as go
-import pandas as pd
