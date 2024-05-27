@@ -168,7 +168,7 @@ def scrape_data(source: str = "theblock", metric: str = "etf_flows", export_resp
     return btc_etf_data(source = source, metric = metric, export_response = export_response)
 
 @st.cache_data
-def get_hybrid_flows_table():
+def get_hybrid_flows_table(param = "default_param"):   #param is a dummy parameter to enable the cacheing.
     dataset_block = btc_etf_data().df
     last_block_day = dataset_block.index[-1]
     fs_data = btc_etf_data()
