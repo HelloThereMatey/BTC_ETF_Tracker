@@ -1,6 +1,8 @@
 import os
 import sys
 import streamlit as st
+st.set_page_config(layout="wide", page_icon=":bird:")
+
 import altair as alt
 import pandas as pd
 
@@ -22,7 +24,6 @@ index = hybrid_flow_table_deet.index.strftime('%Y-%m-%d')
 fig = charts.plotly_bar_sl(hybrid_df, custom_index = index, width = 1200, height = 750, ytitle="Net flow for ETF on date (USD millions)")
 
 ################ Streamlit commands below ############################
-st.set_page_config(layout="wide", page_icon=":bird:")
 st.subheader("Daily fund flows for all Spot BTC ETFs (USD)")
 st.plotly_chart(fig, use_container_width=True)
 

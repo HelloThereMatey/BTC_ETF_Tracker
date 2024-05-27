@@ -1,10 +1,10 @@
 import streamlit as st
+st.set_page_config(layout = "wide", page_icon=":dog:")
+
 import pandas as pd
 import os
 import sys
 import altair as alt
-
-st.set_page_config(layout = "wide", page_icon=":dog:")
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
