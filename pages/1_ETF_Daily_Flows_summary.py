@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import streamlit as st
+st.set_page_config(layout="wide", page_icon=":cat:")       #Must be up top........
+
 import altair as alt
 
 fdel = os.path.sep
@@ -38,7 +40,6 @@ alt_chart = alt.Chart(short_df).mark_bar().encode(
 )
 
 ################ Streamlit commands below ############################
-st.set_page_config(layout="wide", page_icon=":cat:")
 
 #st, space, st  = st.columns([1, 0.05, 1])  # Adjust the middle value to increase or decrease the space
 st.title("Daily USD flows into and out of U.S Bitcoin spot ETFs.")
