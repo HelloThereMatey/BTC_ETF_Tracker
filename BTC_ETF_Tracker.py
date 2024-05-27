@@ -22,7 +22,7 @@ farside_url = "https://farside.co.uk/?p=997"
 st.markdown("Data sources: The Block: [link](%s)" % block_url)
 st.markdown("Farside Investors: [link](%s)" % farside_url)
 st.caption("Thank you very much sources, have a look at those sources. I like my charts better though.")
-st.image(logo, use_column_width=False, width = 200)
+st.image(logo, use_column_width=False, width = 300)
 st.caption("Follow me on: Twitter/𝕏: @Tech_Pleb")
 st.caption("Github: @HelloThereMatey")
 st.caption("Chuck me some sats if you would kind ser: sixhallway54@walletofsatoshi.com")
