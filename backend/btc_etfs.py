@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import json
 import os
 import sys
+import streamlit as st
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
@@ -14,7 +15,7 @@ fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
 sys.path.append(wd+fdel+"backend")
-from backend import charts
+from . import charts
 
 ###############N FUNCTIONS BELOW ############
 
@@ -103,7 +104,7 @@ class btc_etf_data(object):
     def __init__(self, source: str = "theblock", metric: str = "etf_flows", export_response: bool = False):
         block_base_url = "https://www.theblock.co/api/charts/chart/crypto-markets/bitcoin-etf/"
         self.etf_urls = {"theblock": {"etf_flows": block_base_url+"spot-bitcoin-etf-flows",
-                "etf_aum_daily": block_base_url+"spot-bitcoin-etf-assets-daily",
+                "etf_aum_daily": block_base_url+"spot-bitcoin-etf-onchain-holdings-usd",
                 "btc_etf_aum": block_base_url+"spot-bitcoin-etf-assets",
                 "exGBTC_etf_aum_hist": block_base_url+"spot-bitcoin-etf-aum-ex-gbtc-daily",
                 "btc_holdings": block_base_url+"spot-bitcoin-etf-onchain-holdings"},
@@ -159,7 +160,8 @@ class btc_etf_data(object):
             return output_df.set_index('Name', drop = True).squeeze().rename('Spot BTC ETF AUM (USD)')
         else:    
             return output_df  
-
+        
+    @st.cache_data
     def get_farside_table(self) -> pd.DataFrame:
         html = get_html_save("https://farside.co.uk/?p=997", save=False)
         soup = BeautifulSoup(html, features="html.parser"); dumpstr = ""
@@ -192,6 +194,13 @@ class btc_etf_data(object):
 
         return output    
 
+
+########### Helper functions ###############################################################################
+@st.cache_data
+def scrape_data(source: str = "theblock", metric: str = "etf_flows", export_response: bool = False):
+    return btc_etf_data(source = source, metric = metric, export_response = export_response)
+
+@st.cache_data
 def get_hybrid_flows_table():
     dataset_block = btc_etf_data().df
     last_block_day = dataset_block.index[-1]

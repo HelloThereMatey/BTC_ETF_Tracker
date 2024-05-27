@@ -58,12 +58,14 @@ st.caption("Altair stacked bar chart showing the same flow data.")
 st.bar_chart(short_df2, use_container_width=True)
 st.divider()
 
+######################## DAILY FLOWS FOR EACH ETF ##################################################################
 st.subheader("Daily net flow (USD)")
 st.bar_chart(net_flow,use_container_width=True)
 st.caption("This is the sum of all ETF flows for each day. Positive values indicate more money flowed in than out.")
 st.divider()
 cum_flows = short_df.cumsum()
-print(short_df, cum_flows)
+
+####### Cumulative flows ###################################################################
 fig2 = charts.plotly_bar_sl(cum_flows, custom_index, width = 800, height = 650, ytitle="Cumulative flows (USD millions)")
 st.subheader("Cumulative flows since inception (USD)")
 st.plotly_chart(fig2, use_container_width=True)

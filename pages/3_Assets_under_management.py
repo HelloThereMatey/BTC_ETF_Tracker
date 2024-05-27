@@ -9,18 +9,19 @@ st.set_page_config(layout = "wide", page_icon=":dog:")
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
-sys.path.append(wd+fdel+"backend")
+
+sys.path.append(parent)
 from backend import btc_etfs, charts
 
 ######### GET AUM DATA ########################
-aum_dollars = btc_etfs.btc_etf_data(metric="etf_aum_daily").df
+aum_dollars = btc_etfs.scrape_data(metric="etf_aum_daily").df
 aum_dollars /= 10e9
-aum = btc_etfs.btc_etf_data(metric="btc_etf_aum", export_response=True)
+aum = btc_etfs.scrape_data(metric="btc_etf_aum", export_response=True)
 latest_aum = aum.df
 last_update = aum.last_update.strftime('%Y-%m-%d') 
 pie_fig = charts.plotly_pie(latest_aum, title = "Latest AUM Distribution (%), Updated: "+last_update)
 
-btcholdings = btc_etfs.btc_etf_data(metric="btc_holdings").df
+btcholdings = btc_etfs.scrape_data(metric="btc_holdings").df
 
 # st, st  = st.columns(2)
 st.title("Bitcoin: U.S Spot ETF's, Assets under management - AUM (USD)")
