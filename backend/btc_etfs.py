@@ -16,6 +16,7 @@ wd = os.path.dirname(__file__)  ## This gets the working directory which is the 
 parent = os.path.dirname(wd)
 sys.path.append(wd+fdel+"backend")
 from . import charts
+#import charts       #Import charts like this if trying to run this file. For the main file, use the line above.
 
 ###############N FUNCTIONS BELOW ############
 
@@ -187,12 +188,21 @@ def get_hybrid_flows_table(param = "default_param"):   #param is a dummy paramet
 
 @st.cache_data
 def get_farside_table() -> pd.DataFrame:
-    html = get_html_save("https://farside.co.uk/?p=997", save=False)
+    html = get_html_save("https://farside.co.uk/?p=997", save=True)
     soup = BeautifulSoup(html, features="html.parser")
 
-    tag = soup.table 
+    tables = soup.findAll("table") 
+    # Initialize a variable to hold the correct table
+    correct_table = None
+
+    # Iterate through each table to find the one containing "IBIT"
+    for table in tables:
+        if "IBIT" in table.get_text():
+            correct_table = table
+            break
+    
     #export_html(str(tag))
-    json_convert = html_to_json(str(tag))
+    json_convert = html_to_json(str(correct_table))
     json_format = json.loads(json_convert)
     #json_file_io(save_load = 'save', json_obj = json_convert, filename = wd+fdel+"farside_etf_flows.json")
     
@@ -205,8 +215,9 @@ def get_farside_table() -> pd.DataFrame:
             output = pd.concat([output, df], axis = 0)
         i += 1    
     
+    #print(" Output at this stage: ", output)
     output.columns = output.columns.str.strip().str.upper()
-    output.set_index("DATE", drop = True, inplace=True)     
+    output.set_index(output.columns[0], drop = True, inplace=True)     
     output = output.iloc[:-4].astype("float")
 
     # Convert index to datetime

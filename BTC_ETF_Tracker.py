@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
-
 st.set_page_config(page_icon=":bird:")
 
 logo = plt.imread(wd+fdel+"Macro_Bootlegger.jpg")
