@@ -2,14 +2,22 @@ import requests
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
-import re
 import json
 import os
-from . import charts
+import sys
+import streamlit as st
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
+
+fdel = os.path.sep
+wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
+parent = os.path.dirname(wd)
+sys.path.append(wd+fdel+"backend")
+from . import charts
+
+###############N FUNCTIONS BELOW ############
 
 def new_request(url: str) -> dict:
     r = requests.get(url)
@@ -96,7 +104,7 @@ class btc_etf_data(object):
     def __init__(self, source: str = "theblock", metric: str = "etf_flows", export_response: bool = False):
         block_base_url = "https://www.theblock.co/api/charts/chart/crypto-markets/bitcoin-etf/"
         self.etf_urls = {"theblock": {"etf_flows": block_base_url+"spot-bitcoin-etf-flows",
-                "etf_aum_daily": block_base_url+"spot-bitcoin-etf-assets-daily",
+                "etf_aum_daily": block_base_url+"spot-bitcoin-etf-onchain-holdings-usd",
                 "btc_etf_aum": block_base_url+"spot-bitcoin-etf-assets",
                 "exGBTC_etf_aum_hist": block_base_url+"spot-bitcoin-etf-aum-ex-gbtc-daily",
                 "btc_holdings": block_base_url+"spot-bitcoin-etf-onchain-holdings"},
@@ -107,7 +115,7 @@ class btc_etf_data(object):
         print(f"Requesting data from {source} for {metric}..")
         if self.source == "farside" and self.metric == "etf_flows":
             try:
-                self.df = self.get_farside_table()
+                self.df = get_farside_table()
             except Exception as e:
                 print("Data retrieval from Farside Investors site failed. Pulling out... Error message: ", e)
                 quit()
@@ -151,45 +159,20 @@ class btc_etf_data(object):
         if self.metric == "btc_etf_aum":
             return output_df.set_index('Name', drop = True).squeeze().rename('Spot BTC ETF AUM (USD)')
         else:    
-            return output_df  
+            return output_df    
 
-    def get_farside_table(self) -> pd.DataFrame:
-        html = get_html_save("https://farside.co.uk/?p=997", save=False)
-        soup = BeautifulSoup(html, features="html.parser"); dumpstr = ""
-    
-        tag = soup.table 
-        #export_html(str(tag))
-        json_convert = html_to_json(str(tag))
-        json_format = json.loads(json_convert)
-        #json_file_io(save_load = 'save', json_obj = json_convert, filename = wd+fdel+"farside_etf_flows.json")
-        
-        i = 0
-        for date in json_format:
-            df = pd.json_normalize(date).replace({"-": "0.0"}, regex=True).replace({"\(": "-", "\)": "", ",": ""}, regex=True)
-            if i == 0: 
-                output = df
-            else:
-                output = pd.concat([output, df], axis = 0)
-            i += 1    
-       
-        output.columns = output.columns.str.strip().str.upper()
-        output.set_index("DATE", drop = True, inplace=True)     
-        output = output.iloc[:-4].astype("float")
 
-        # Convert index to datetime
-        index = pd.DatetimeIndex(pd.to_datetime(output.index, format='%d %b %Y', errors='coerce').date).dropna()
-     
-        output.set_index(index, drop = True, inplace = True)
-        output = output.loc[~output.index.duplicated(keep='first')]
-        output['Total'] = output[[col for col in output.columns if col != 'TOTAL']].sum(axis=1)
+########### Helper functions ###############################################################################
+@st.cache_data
+def scrape_data(source: str = "theblock", metric: str = "etf_flows", export_response: bool = False):
+    return btc_etf_data(source = source, metric = metric, export_response = export_response)
 
-        return output    
-
-def get_hybrid_flows_table():
+@st.cache_data
+def get_hybrid_flows_table(param = "default_param"):   #param is a dummy parameter to enable the cacheing.
     dataset_block = btc_etf_data().df
     last_block_day = dataset_block.index[-1]
     fs_data = btc_etf_data()
-    farside = fs_data.get_farside_table()*1000000
+    farside = get_farside_table()*1000000
   
     orders = dataset_block.sum(axis = 0)
     orders = orders.abs().sort_values(ascending=False)
@@ -201,6 +184,39 @@ def get_hybrid_flows_table():
     hybrid_df = hybrid_df.loc[(hybrid_df!=0).any(axis=1)]
     
     return hybrid_df, last_block_day
+
+@st.cache_data
+def get_farside_table() -> pd.DataFrame:
+    html = get_html_save("https://farside.co.uk/?p=997", save=False)
+    soup = BeautifulSoup(html, features="html.parser")
+
+    tag = soup.table 
+    #export_html(str(tag))
+    json_convert = html_to_json(str(tag))
+    json_format = json.loads(json_convert)
+    #json_file_io(save_load = 'save', json_obj = json_convert, filename = wd+fdel+"farside_etf_flows.json")
+    
+    i = 0
+    for date in json_format:
+        df = pd.json_normalize(date).replace({"-": "0.0"}, regex=True).replace({"\(": "-", "\)": "", ",": ""}, regex=True)
+        if i == 0: 
+            output = df
+        else:
+            output = pd.concat([output, df], axis = 0)
+        i += 1    
+    
+    output.columns = output.columns.str.strip().str.upper()
+    output.set_index("DATE", drop = True, inplace=True)     
+    output = output.iloc[:-4].astype("float")
+
+    # Convert index to datetime
+    index = pd.DatetimeIndex(pd.to_datetime(output.index, format='%d %b %Y', errors='coerce').date).dropna()
+    
+    output.set_index(index, drop = True, inplace = True)
+    output = output.loc[~output.index.duplicated(keep='first')]
+    output['Total'] = output[[col for col in output.columns if col != 'TOTAL']].sum(axis=1)
+
+    return output  
 
 if __name__ == "__main__":
     hybrid_df, cunt = get_hybrid_flows_table()

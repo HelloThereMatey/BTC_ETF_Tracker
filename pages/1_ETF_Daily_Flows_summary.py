@@ -3,17 +3,20 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
 import streamlit as st
-import altair as alt
+st.set_page_config(layout="wide", page_icon=":cat:")       #Must be up top........
 
-import backend  #This is my backend file that houses the functions and classes for getting the data and plotting templates etc. 
+import altair as alt
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
+sys.path.append(wd+fdel+"backend")
+from backend import btc_etfs, charts
 
 #Get data on daily flows ######
-hybrid_df, last_block_day = backend.btc_etfs.get_hybrid_flows_table()
+hybrid_df, last_block_day = btc_etfs.get_hybrid_flows_table()
 hybrid_df.index.rename('Date', inplace=True)
 hybrid_df /= 1000000  # Convert to millions of USD
 
@@ -37,7 +40,6 @@ alt_chart = alt.Chart(short_df).mark_bar().encode(
 )
 
 ################ Streamlit commands below ############################
-st.set_page_config(layout="wide", page_icon=":cat:")
 
 #st, space, st  = st.columns([1, 0.05, 1])  # Adjust the middle value to increase or decrease the space
 st.title("Daily USD flows into and out of U.S Bitcoin spot ETFs.")
@@ -47,7 +49,7 @@ st.caption("Data yet to be finalized for dates after: "+last_block_day.strftime(
 st.caption("Recommended: Minimize the page choice bar at left to best view charts with full screen.")
 st.divider()
 
-fig = backend.charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="ETF net flow (USD millions)")
+fig = charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="ETF net flow (USD millions)")
 
 # Display the figure in the Streamlit app
 st.caption("Plotly grouped bar chart. Slide bar at bottom to change date range. Bar show the net flow (flows in - flows out) for specific ETF on that date.")
@@ -57,13 +59,15 @@ st.caption("Altair stacked bar chart showing the same flow data.")
 st.bar_chart(short_df2, use_container_width=True)
 st.divider()
 
+######################## DAILY FLOWS FOR EACH ETF ##################################################################
 st.subheader("Daily net flow (USD)")
 st.bar_chart(net_flow,use_container_width=True)
 st.caption("This is the sum of all ETF flows for each day. Positive values indicate more money flowed in than out.")
 st.divider()
 cum_flows = short_df.cumsum()
-print(short_df, cum_flows)
-fig2 = backend.charts.plotly_bar_sl(cum_flows, custom_index, width = 800, height = 650, ytitle="Cumulative flows (USD millions)")
+
+####### Cumulative flows ###################################################################
+fig2 = charts.plotly_bar_sl(cum_flows, custom_index, width = 800, height = 650, ytitle="Cumulative flows (USD millions)")
 st.subheader("Cumulative flows since inception (USD)")
 st.plotly_chart(fig2, use_container_width=True)
 st.caption("This chart shows the cumulative net flow for that ETF since the inception. Does not consider the AUM & price changes in the underlying asset.")
