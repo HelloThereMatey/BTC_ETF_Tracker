@@ -47,6 +47,32 @@ def handle_date_range(date_str, year):
         date_str = date_str.split(' to ')[0]  # return start date
     return date_str + ' ' + str(year) 
 
+def read_html_file(file_path: str) -> str:
+    try:
+        with open(file_path, 'r') as file:
+            html_content = file.read()
+            return html_content
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        return None
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        return None
+
+def convert_to_float(x):
+    if isinstance(x, str):
+        x.replace(',', '')
+        if x.startswith('(') and x.endswith(')'):
+            return -float(x[1:-1])
+        elif x == '-':
+            return np.nan
+        elif x.replace('.', '', 1).replace('-', '', 1).isdigit():
+            return float(x)
+        else:
+            return np.nan
+    else:
+        return x
+    
 # Save JSON object to a file
 def json_file_io(filename: str = wd+fdel+'last_request.json', save_load: str = 'load', json_obj = None):
     #Input json_obj only if saving, not loading. 
@@ -79,8 +105,12 @@ def html_to_json(content: str, indent=None) -> str:
         if thead:
             items = {}
             if len(cells) > 0:
+                print(headers)
                 for index in headers:
-                    items[headers[index]] = cells[index].text
+                    try: 
+                        items[headers[index]] = cells[index].text
+                    except:
+                        pass
         else:
             items = []
             for index in cells:
@@ -88,6 +118,25 @@ def html_to_json(content: str, indent=None) -> str:
         if items:
             data.append(items)
     return json.dumps(data, indent=indent)
+
+def html_json_meta(html_table: str) -> str:
+    # Parse the HTML table using BeautifulSoup
+    soup = BeautifulSoup(html_table, 'html.parser')
+    table = soup.find('table')
+
+    # Extract the column names from the first row
+    columns = [th.text.strip() for th in table.find('tr').find_all('th')]
+
+    # Extract the data from the table rows
+    data = []
+    for row in table.find_all('tr')[1:]:
+        row_data = [td.text.strip() for td in row.find_all('td')]
+        data.append(dict(zip(columns, row_data)))
+
+    # Convert the data to JSON format
+    json_str = json.dumps(data)
+    json_data = json.loads(json_str)    
+    return json_data
 
 def combine_etf_datasets(df1: pd.DataFrame, df2: pd.DataFrame):
     if set(df1.columns) != set(df2.columns):
@@ -171,10 +220,11 @@ def scrape_data(source: str = "theblock", metric: str = "etf_flows", export_resp
 @st.cache_data
 def get_hybrid_flows_table(param = "default_param"):   #param is a dummy parameter to enable the cacheing.
     dataset_block = btc_etf_data().df
+   #print("\n\n",dataset_block,"\n\n")
     last_block_day = dataset_block.index[-1]
-    fs_data = btc_etf_data()
+    #fs_data = btc_etf_data()
     farside = get_farside_table()*1000000
-  
+ 
     orders = dataset_block.sum(axis = 0)
     orders = orders.abs().sort_values(ascending=False)
 
@@ -201,50 +251,40 @@ def get_farside_table() -> pd.DataFrame:
             correct_table = table
             break
     
-    #export_html(str(tag))
-    json_convert = html_to_json(str(correct_table))
-    json_format = json.loads(json_convert)
+    export_html(str(correct_table))
+    json_format = html_json_meta(str(correct_table))
     #json_file_io(save_load = 'save', json_obj = json_convert, filename = wd+fdel+"farside_etf_flows.json")
-    
-    i = 0
-    for date in json_format:
-        df = pd.json_normalize(date).replace({"-": "0.0"}, regex=True).replace({"\(": "-", "\)": "", ",": ""}, regex=True)
-        if i == 0: 
-            output = df
-        else:
-            output = pd.concat([output, df], axis = 0)
-        i += 1    
-    
-    #print(" Output at this stage: ", output)
-    output.columns = output.columns.str.strip().str.upper()
-    output.set_index(output.columns[0], drop = True, inplace=True)     
-    output = output.iloc[:-4].astype("float")
+    thetable = pd.json_normalize(json_format).dropna()
+    thetable.set_index(thetable.columns[0], drop = True, inplace=True)
+    thetable.index.rename('Date', inplace=True)
+    flows_part = thetable.iloc[0:thetable.index.get_loc('Total')]
+    flows_part.index = pd.to_datetime(flows_part.index, format='%d %b %Y')
+    flows_part = flows_part.replace('-', np.nan).replace(",", "", regex=True)
+    flows_part = flows_part.applymap(convert_to_float)
+    stats_bit = thetable.iloc[thetable.index.get_loc('Total'):-1].replace('-', np.nan).replace(",", "", regex=True)
+    stats_bit = stats_bit.applymap(convert_to_float)
 
-    # Convert index to datetime
-    index = pd.DatetimeIndex(pd.to_datetime(output.index, format='%d %b %Y', errors='coerce').date).dropna()
-    
-    output.set_index(index, drop = True, inplace = True)
-    output = output.loc[~output.index.duplicated(keep='first')]
-    output['Total'] = output[[col for col in output.columns if col != 'TOTAL']].sum(axis=1)
+    #print(flows_part, "\n\n", stats_bit)
 
-    return output  
+    return flows_part  
 
 if __name__ == "__main__":
-    hybrid_df, cunt = get_hybrid_flows_table()
-    hybrid_df.index.rename('Date', inplace=True)
+    hybrid_df, lastdayblock = get_hybrid_flows_table()
+    print(hybrid_df, lastdayblock,"\n\n", hybrid_df.dtypes)
+    # hybrid_df.index.rename('Date', inplace=True)
 
-    #hybrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
-    print(hybrid_df)
-    quit()
-    hybrid_df = pd.read_excel(wd+fdel+"Hybrid_flowz_table.xlsx", index_col = 0)
-    first_four = hybrid_df.iloc[:, :4]
-    sum_others = hybrid_df.iloc[:, 4:].sum(axis=1)
-    short_df = first_four.assign(SumOthers=sum_others).rename(columns={'SumOthers': 'Others'})
-    net_flow = short_df.sum(axis=1).rename('Net flow total (USD)')
-    short_df2 = pd.concat([short_df, net_flow], axis=1)
-    custom_index = short_df.index.strftime('%Y-%m-%d')
+    # #hybrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
+    # print(hybrid_df)
+  
+    # hybrid_df = pd.read_excel(wd+fdel+"Hybrid_flowz_table.xlsx", index_col = 0)
+    # first_four = hybrid_df.iloc[:, :4]
+    # sum_others = hybrid_df.iloc[:, 4:].sum(axis=1)
+    # short_df = first_four.assign(SumOthers=sum_others).rename(columns={'SumOthers': 'Others'})
+    # net_flow = short_df.sum(axis=1).rename('Net flow total (USD)')
+    # short_df2 = pd.concat([short_df, net_flow], axis=1)
+    # custom_index = short_df.index.strftime('%Y-%m-%d')
 
-    fig = charts.altair_line(hybrid_df, right_columns = ['GBTC'])
+    # fig = charts.altair_line(hybrid_df, right_columns = ['GBTC'])
  
     #hydrid_df.to_excel(wd+fdel+"Hybrid_flowz_table.xlsx")
     # hydrid_df.plot(kind='bar', stacked=False, figsize=(10,7))
@@ -255,4 +295,3 @@ if __name__ == "__main__":
 
     # df2.to_csv(wd+fdel+"FarsideLastWeek.csv")
     # dataset_block.to_csv(wd+fdel+"TheBlockData.csv")
-
