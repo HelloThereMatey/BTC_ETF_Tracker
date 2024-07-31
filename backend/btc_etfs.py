@@ -260,9 +260,9 @@ def get_farside_table() -> pd.DataFrame:
     flows_part = thetable.iloc[0:thetable.index.get_loc('Total')]
     flows_part.index = pd.to_datetime(flows_part.index, format='%d %b %Y')
     flows_part = flows_part.replace('-', np.nan).replace(",", "", regex=True)
-    flows_part = flows_part.applymap(convert_to_float)
+    flows_part = flows_part.map(convert_to_float)
     stats_bit = thetable.iloc[thetable.index.get_loc('Total'):-1].replace('-', np.nan).replace(",", "", regex=True)
-    stats_bit = stats_bit.applymap(convert_to_float)
+    stats_bit = stats_bit.map(convert_to_float)
 
     #print(flows_part, "\n\n", stats_bit)
 

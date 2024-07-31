@@ -64,23 +64,36 @@ st.subheader("Daily net flow (USD)")
 
 ##Trying to get amoving average on my altair chart here below, not done yet....
 # Calculate the moving average
-window_size = 5
-net_flow_ma = net_flow.rolling(window_size).mean()
+net_flow.index.rename("Date", inplace=True)
+net_flow2 = net_flow.reset_index()
+window = 20
+net_flow2[str(window) + "_MA"] = net_flow2['Net flow total (USD)'].rolling(window=window).mean()
 
-# Create the combined chart
-# chart = alt.Chart(net_flow).mark_bar(color='skyblue', opacity=0.5).encode(
-#     x=net_flow.index,
-#     y=net_flow
-# ) + alt.Chart(net_flow).mark_line(color='red', size=2).encode(
-#     x = net_flow_ma.index,
-#     y = net_flow_ma
-# )
+# Create the bar chart
+bar_chart = alt.Chart(net_flow2).mark_bar(opacity=0.8).encode(
+    x=alt.X('Date:T', axis=alt.Axis(title='Date')),
+    y=alt.Y('Net flow total (USD):Q', axis=alt.Axis(title='USD (millions)')),
+    color=alt.value('skyblue')
+).properties(
+    title='Net Flow and Moving Average'
+)
 
-# Display the chart in Streamlit
-#st.altair_chart(chart, use_container_width=True)
+# Create the bar chart
+line_chart = alt.Chart(net_flow2).mark_line().encode(
+    x=alt.X('Date:T', axis=alt.Axis(title='Date')),
+    y=alt.Y(str(window) + "_MA:Q", axis=alt.Axis(title='USD (millions)')),
+    color=alt.value('red')
+).properties(
+    title="Aggregate daily net Flow of all U.S spot ETF's with a 20-day (1 month) Moving Average"
+)
 
-st.bar_chart(net_flow,use_container_width=True)
-st.caption("This is the sum of all ETF flows for each day. Positive values indicate more money flowed in than out.")
+# Combine the charts
+combined_chart = alt.layer(bar_chart, line_chart)
+
+#st.bar_chart(net_flow,use_container_width=True)
+st.altair_chart(combined_chart, use_container_width=True)
+st.caption("This is the sum of all ETF flows for each day. Positive values indicate more money flowed in than out. \
+           Red line is a 20-day moving average. ")
 st.divider()
 
 cum_flows = short_df.cumsum()
