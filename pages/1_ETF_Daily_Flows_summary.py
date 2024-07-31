@@ -75,7 +75,7 @@ bar_chart = alt.Chart(net_flow2).mark_bar(opacity=0.8).encode(
     y=alt.Y('Net flow total (USD):Q', axis=alt.Axis(title='USD (millions)')),
     color=alt.value('skyblue')
 ).properties(
-    title='Net Flow and Moving Average'
+    title="Aggregate daily net Flow of all U.S spot ETF's with a 20-day (1 month) Moving Average"
 )
 
 # Create the bar chart
