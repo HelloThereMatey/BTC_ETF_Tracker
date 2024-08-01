@@ -22,7 +22,8 @@ block_url = "https://www.theblock.co/data/crypto-markets/bitcoin-etf"
 farside_url = "https://farside.co.uk/?p=997"
 st.markdown("Data sources: The Block: [link](%s)" % block_url)
 st.markdown("Farside Investors: [link](%s)" % farside_url)
-st.caption("Thank you very much sources, have a look at those sources. I like my charts better though.")
+st.caption("Thank you very much sources, I recommend you to check out those sites, much good data there.\
+           I like my charts better though and if your a fan of streamlit, plotly or altair dive on in and appreciate the clean charting.")
 st.image(logo, use_column_width=False, width = 250)
 st.caption("Follow me on: Twitter/𝕏: @Tech_Pleb")
 st.caption("Github: @HelloThereMatey")
