@@ -231,6 +231,7 @@ def get_hybrid_flows_table(param = "default_param"):   #param is a dummy paramet
     last_block_day = dataset_block.index[-1]
     #fs_data = btc_etf_data()
     farside = get_farside_table()*1000000
+    print("Farside data: ", farside, "\n\n")
  
     orders = dataset_block.sum(axis = 0)
     orders = orders.abs().sort_values(ascending=False)
