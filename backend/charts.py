@@ -10,7 +10,7 @@ fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
 
-def altair_line(df: pd.DataFrame, right_columns: list, axis_title: str = "USD"):
+def altair_line(df: pd.DataFrame, right_columns: list = [], axis_title: str = "USD"):
     #Melting the DataFrame to long format for easier plotting with Altair
     df.index.rename('Date', inplace=True)
    

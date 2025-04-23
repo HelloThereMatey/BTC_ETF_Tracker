@@ -52,7 +52,9 @@ st.divider()
 fig = charts.plotly_bar_sl(short_df, custom_index, width = 800, height = 650, ytitle="ETF net flow (USD millions)")
 
 # Display the figure in the Streamlit app
-st.caption("Plotly grouped bar chart. Slide bar at bottom to change date range. Bar show the net flow (flows in - flows out) for specific ETF on that date.")
+st.caption("Plotly grouped bar chart. Slide bar at bottom to change date range. Bar show the net flow (flows in - flows out) for specific ETF on that date.\
+           If you can see no data it means that the date range is too wide which has made the bars to thin to see. Use the date slider to view a smaller sub-range \
+           and then move that range around to view all the data")
 st.plotly_chart(fig, use_container_width=True)
 st.divider()
 st.caption("Altair stacked bar chart showing the same flow data.")
