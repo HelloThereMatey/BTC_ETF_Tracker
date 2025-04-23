@@ -3,14 +3,30 @@ import streamlit as st
 import os
 import sys
 import matplotlib.pyplot as plt
+from PIL import Image
 
 fdel = os.path.sep
 wd = os.path.dirname(__file__)  ## This gets the working directory which is the folder where you have placed this .py file. 
 parent = os.path.dirname(wd)
 st.set_page_config(page_icon=":bird:")
 
-logo = plt.imread(wd+fdel+"Macro_Bootlegger.jpg")
-bitty = plt.imread(wd+fdel+"bitcoin.jpg")
+# More reliable way to handle paths in Streamlit Cloud
+try:
+    # Try the direct approach with current directory first
+    logo_path = "Macro_Bootlegger.jpg"
+    bitcoin_path = "bitcoin.jpg"
+    
+    # Use PIL instead of matplotlib for image loading
+    logo = Image.open(logo_path)
+    bitty = Image.open(bitcoin_path)
+except FileNotFoundError:
+    # Fall back to absolute path if needed
+    wd = os.path.dirname(__file__)
+    logo_path = os.path.join(wd, "Macro_Bootlegger.jpg")
+    bitcoin_path = os.path.join(wd, "bitcoin.jpg")
+    
+    logo = Image.open(logo_path)
+    bitty = Image.open(bitcoin_path)
 menu_items = {"Get help": "www.suckle_adingaling.com", "Report a bug": "www.suckle_adingaling.com", "About": "www.suckle_adingaling.com"}
 page_items = {"Flows_Dollars":"ETF daily in/outflow (USD)", "Flows_BTC":"ETF daily in/outflow (BTC)", "AUM_USD":"ETF AUM (USD)",
               "AUM_BTC":"ETF AUM (BTC)"}
