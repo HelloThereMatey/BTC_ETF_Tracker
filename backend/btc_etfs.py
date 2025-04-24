@@ -130,15 +130,32 @@ def html_json_meta(html_table: str) -> str:
     # Parse the HTML table using BeautifulSoup
     soup = BeautifulSoup(html_table, 'html.parser')
     table = soup.find('table')
-
-    # Extract the column names from the first row
-    columns = [th.text.strip() for th in table.find('tr').find_all('th')]
+    
+    # Add check if table is None
+    if not table:
+        raise ValueError("No table found in the HTML content")
+        
+    # Get first row and find headers - add error handling
+    first_row = table.find('tr')
+    if not first_row:
+        raise ValueError("No rows found in the table")
+        
+    headers = first_row.find_all('th')
+    if not headers:
+        # Try to find headers in td elements (some tables use td instead of th for headers)
+        headers = first_row.find_all('td')
+        
+    if not headers:
+        raise ValueError("No headers found in the table")
+        
+    columns = [th.text.strip() for th in headers]
 
     # Extract the data from the table rows
     data = []
     for row in table.find_all('tr')[1:]:
         row_data = [td.text.strip() for td in row.find_all('td')]
-        data.append(dict(zip(columns, row_data)))
+        if row_data and len(row_data) == len(columns):  # Only include rows with matching column count
+            data.append(dict(zip(columns, row_data)))
 
     # Convert the data to JSON format
     json_str = json.dumps(data)
@@ -225,60 +242,89 @@ def scrape_data(source: str = "theblock", metric: str = "etf_flows", export_resp
     return btc_etf_data(source = source, metric = metric, export_response = export_response)
 
 @st.cache_data
-def get_hybrid_flows_table(param = "default_param"):   #param is a dummy parameter to enable the cacheing.
-    dataset_block = btc_etf_data().df
-   #print("\n\n",dataset_block,"\n\n")
-    last_block_day = dataset_block.index[-1]
-    #fs_data = btc_etf_data()
+def get_hybrid_flows_table(param="default_param"):
     try:
-        farside = get_farside_table()*1000000
-        print("Farside data: ", farside, "\n\n")
-    except:
-        print("Farside data retrieval failed. Pulling out...")
-        return 0
+        dataset_block = btc_etf_data().df
+        last_block_day = dataset_block.index[-1]
+        
+        try:
+            farside = get_farside_table()*1000000
+            print("Farside data retrieved successfully")
+        except Exception as e:
+            print(f"Farside data retrieval failed: {str(e)}")
+            st.warning("Could not load Farside data. Using only Block data.")
+            # Return just the block data if farside fails
+            return dataset_block, last_block_day
  
-    orders = dataset_block.sum(axis = 0)
-    orders = orders.abs().sort_values(ascending=False)
+        orders = dataset_block.sum(axis=0)
+        orders = orders.abs().sort_values(ascending=False)
 
-    dataset_block = dataset_block.reindex(columns = orders.index)
-    output = farside.reindex(columns = orders.index)
-    hybrid_df = combine_etf_datasets(dataset_block, output)
-    hybrid_df = hybrid_df.astype("float")
-    hybrid_df = hybrid_df.loc[(hybrid_df!=0).any(axis=1)]
-    
-    return hybrid_df, last_block_day
+        dataset_block = dataset_block.reindex(columns=orders.index)
+        
+        # Check if farside has data
+        if farside.empty:
+            return dataset_block, last_block_day
+            
+        output = farside.reindex(columns=orders.index)
+        hybrid_df = combine_etf_datasets(dataset_block, output)
+        hybrid_df = hybrid_df.astype("float")
+        hybrid_df = hybrid_df.loc[(hybrid_df!=0).any(axis=1)]
+        
+        return hybrid_df, last_block_day
+        
+    except Exception as e:
+        st.error(f"Error creating hybrid flow table: {str(e)}")
+        print(f"Error in get_hybrid_flows_table: {str(e)}")
+        # Return a minimal dataframe if all else fails
+        return pd.DataFrame(), pd.Timestamp.now()
 
 @st.cache_data
 def get_farside_table() -> pd.DataFrame:
-    html = get_html_save("https://farside.co.uk/?p=997", save=True)
-    soup = BeautifulSoup(html, features="html.parser")
+    try:
+        html = get_html_save("https://farside.co.uk/?p=997", save=True)
+        soup = BeautifulSoup(html, features="html.parser")
 
-    tables = soup.findAll("table") 
-    # Initialize a variable to hold the correct table
-    correct_table = None
+        tables = soup.findAll("table") 
+        if not tables:
+            raise ValueError("No tables found on the webpage")
+            
+        # Initialize a variable to hold the correct table
+        correct_table = None
 
-    # Iterate through each table to find the one containing "IBIT"
-    for table in tables:
-        if "IBIT" in table.get_text():
-            correct_table = table
-            break
-    
-    export_html(str(correct_table))
-    json_format = html_json_meta(str(correct_table))
-    #json_file_io(save_load = 'save', json_obj = json_convert, filename = wd+fdel+"farside_etf_flows.json")
-    thetable = pd.json_normalize(json_format).dropna()
-    thetable.set_index(thetable.columns[0], drop = True, inplace=True)
-    thetable.index.rename('Date', inplace=True)
-    flows_part = thetable.iloc[0:thetable.index.get_loc('Total')]
-    flows_part.index = pd.to_datetime(flows_part.index, format='%d %b %Y')
-    flows_part = flows_part.replace('-', np.nan).replace(",", "", regex=True)
-    flows_part = flows_part.map(convert_to_float)
-    stats_bit = thetable.iloc[thetable.index.get_loc('Total'):-1].replace('-', np.nan).replace(",", "", regex=True)
-    stats_bit = stats_bit.map(convert_to_float)
-
-    #print(flows_part, "\n\n", stats_bit)
-
-    return flows_part  
+        # Iterate through each table to find the one containing "IBIT"
+        for table in tables:
+            if "IBIT" in table.get_text():
+                correct_table = table
+                break
+        
+        if not correct_table:
+            raise ValueError("Could not find table containing 'IBIT'")
+        
+        export_html(str(correct_table))
+        json_format = html_json_meta(str(correct_table))
+        
+        thetable = pd.json_normalize(json_format).dropna()
+        if thetable.empty:
+            raise ValueError("Parsed table is empty")
+            
+        thetable.set_index(thetable.columns[0], drop=True, inplace=True)
+        thetable.index.rename('Date', inplace=True)
+        
+        if 'Total' not in thetable.index:
+            raise ValueError("Table doesn't contain 'Total' row")
+            
+        flows_part = thetable.iloc[0:thetable.index.get_loc('Total')]
+        flows_part.index = pd.to_datetime(flows_part.index, format='%d %b %Y')
+        flows_part = flows_part.replace('-', np.nan).replace(",", "", regex=True)
+        flows_part = flows_part.map(convert_to_float)
+        
+        return flows_part
+        
+    except Exception as e:
+        st.error(f"Error fetching Farside data: {str(e)}")
+        print(f"Error in get_farside_table: {str(e)}")
+        # Return an empty dataframe with the expected structure
+        return pd.DataFrame(columns=['IBIT', 'FBTC', 'ARKB', 'BITB', 'EZBC', 'BRRR', 'HODL', 'BTCO', 'GBTC'])
 
 if __name__ == "__main__":
     hybrid_df, lastdayblock = get_hybrid_flows_table()

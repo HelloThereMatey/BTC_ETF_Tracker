@@ -10,23 +10,9 @@ wd = os.path.dirname(__file__)  ## This gets the working directory which is the 
 parent = os.path.dirname(wd)
 st.set_page_config(page_icon=":bird:")
 
-# More reliable way to handle paths in Streamlit Cloud
-# try:
-    # Try the direct approach with current directory first
-logo_path = "Macro_Bootlegger.jpg"
-bitcoin_path = "bitcoin.jpg"
-
 # Use PIL instead of matplotlib for image loading
-logo = Image.open(logo_path)
-bitty = Image.open(bitcoin_path)
-# except FileNotFoundError:
-#     # Fall back to absolute path if needed
-#     wd = os.path.dirname(__file__)
-#     logo_path = os.path.join(wd, "Macro_Bootlegger.jpg")
-#     bitcoin_path = os.path.join(wd, "bitcoin.jpg")
-    
-#     logo = Image.open(logo_path)
-#     bitty = Image.open(bitcoin_path)
+logo = Image.open("Macro_Bootlegger.jpg")
+bitty = Image.open("bitcoin.jpg")
 
 menu_items = {"Get help": "www.suckle_adingaling.com", "Report a bug": "www.suckle_adingaling.com", "About": "www.suckle_adingaling.com"}
 page_items = {"Flows_Dollars":"ETF daily in/outflow (USD)", "Flows_BTC":"ETF daily in/outflow (BTC)", "AUM_USD":"ETF AUM (USD)",
