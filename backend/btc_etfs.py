@@ -244,39 +244,68 @@ def scrape_data(source: str = "theblock", metric: str = "etf_flows", export_resp
 @st.cache_data
 def get_hybrid_flows_table(param="default_param"):
     try:
-        dataset_block = btc_etf_data().df
-        last_block_day = dataset_block.index[-1]
+        # First try to get the Block data
+        try:
+            dataset_block = btc_etf_data().df
+            if dataset_block.empty:
+                raise ValueError("Block data is empty")
+            last_block_day = dataset_block.index[-1]
+        except Exception as e:
+            st.error(f"Error retrieving Block data: {str(e)}")
+            print(f"Block data retrieval failed: {str(e)}")
+            # Create a fallback dataset with just dates and empty values
+            # This at least allows the app to render with placeholders
+            dates = pd.date_range(start='2024-01-01', end=pd.Timestamp.now())
+            dataset_block = pd.DataFrame(index=dates, columns=['IBIT', 'FBTC', 'ARKB', 'BITB', 'EZBC', 'BRRR', 'HODL', 'BTCO', 'GBTC'])
+            dataset_block = dataset_block.fillna(0)
+            last_block_day = dataset_block.index[-1]
         
+        # Then try to get the Farside data
         try:
             farside = get_farside_table()*1000000
             print("Farside data retrieved successfully")
+            
+            # Check if farside has data
+            if farside.empty:
+                st.info("Farside data is empty. Using only Block data.")
+                return dataset_block, last_block_day
+                
         except Exception as e:
             print(f"Farside data retrieval failed: {str(e)}")
-            st.warning("Could not load Farside data. Using only Block data.")
+            st.warning(f"Could not load Farside data: {str(e)}. Using only Block data.")
             # Return just the block data if farside fails
             return dataset_block, last_block_day
  
-        orders = dataset_block.sum(axis=0)
-        orders = orders.abs().sort_values(ascending=False)
-
-        dataset_block = dataset_block.reindex(columns=orders.index)
-        
-        # Check if farside has data
-        if farside.empty:
-            return dataset_block, last_block_day
+        # Sort columns by their absolute values
+        try:
+            orders = dataset_block.sum(axis=0)
+            orders = orders.abs().sort_values(ascending=False)
+            dataset_block = dataset_block.reindex(columns=orders.index)
+        except Exception as e:
+            print(f"Error sorting columns: {str(e)}")
+            # Continue without sorting if it fails
             
-        output = farside.reindex(columns=orders.index)
-        hybrid_df = combine_etf_datasets(dataset_block, output)
-        hybrid_df = hybrid_df.astype("float")
-        hybrid_df = hybrid_df.loc[(hybrid_df!=0).any(axis=1)]
-        
-        return hybrid_df, last_block_day
+        # Combine the datasets
+        try:    
+            output = farside.reindex(columns=dataset_block.columns)
+            hybrid_df = combine_etf_datasets(dataset_block, output)
+            hybrid_df = hybrid_df.astype(float)
+            hybrid_df = hybrid_df.loc[(hybrid_df!=0).any(axis=1)]
+            
+            return hybrid_df, last_block_day
+        except Exception as e:
+            print(f"Error combining datasets: {str(e)}")
+            st.warning(f"Error combining datasets: {str(e)}. Using only Block data.")
+            return dataset_block, last_block_day
         
     except Exception as e:
         st.error(f"Error creating hybrid flow table: {str(e)}")
         print(f"Error in get_hybrid_flows_table: {str(e)}")
-        # Return a minimal dataframe if all else fails
-        return pd.DataFrame(), pd.Timestamp.now()
+        # Return a minimal dataframe with the correct structure
+        dates = pd.date_range(start='2024-01-01', end=pd.Timestamp.now())
+        fallback_df = pd.DataFrame(index=dates, columns=['IBIT', 'FBTC', 'ARKB', 'BITB', 'EZBC', 'BRRR', 'HODL', 'BTCO', 'GBTC'])
+        fallback_df = fallback_df.fillna(0)
+        return fallback_df, pd.Timestamp.now()
 
 @st.cache_data
 def get_farside_table() -> pd.DataFrame:
